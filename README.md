@@ -1,2 +1,2 @@
 # Django_Petapp
-This is the pet app project based on e-commerce template
+This is the pet app project based on e-commerce template that created by Matt
