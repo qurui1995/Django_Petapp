@@ -11,7 +11,7 @@ from django.shortcuts import redirect
 from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
 from django.views.generic import ListView, DetailView, View
-
+from django.db.models import Q
 
 from .forms import CheckoutForm, CouponForm, RefundForm, PaymentForm
 from .models import (
@@ -339,7 +339,14 @@ class PaymentView(View):
         return redirect("/payment/stripe/")
 
 
-class HomeView(ListView):
+class CategoryMixin:
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["category_choices"] = Item.CATEGORY_CHOICES
+        return context
+
+
+class HomeView(CategoryMixin, ListView):
     model = Item
     paginate_by = 10
     template_name = "home.html"
@@ -348,16 +355,24 @@ class HomeView(ListView):
     def get_queryset(self):
         queryset = super().get_queryset()
         selected_category = self.request.GET.get("category")
+        search_query = self.request.GET.get("search")
 
         if selected_category:
             queryset = queryset.filter(category=selected_category)
 
+        if search_query:
+            queryset = queryset.filter(
+                Q(title__icontains=search_query)
+                | Q(description__icontains=search_query)
+            )
+
         return queryset
-    
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['category_choices'] = Item.get_category_choices()
-        context['category'] = self.request.GET.get("category", "")
+        context["category_choices"] = Item.get_category_choices()
+        context["category"] = self.request.GET.get("category", "")
+        context["search_query"] = self.request.GET.get("search", "")
         return context
 
 
